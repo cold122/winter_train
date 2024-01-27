@@ -4,9 +4,9 @@
 ## 任务一：数据处理
 ### 1. 读取imdb数据集并构建词表
 
-> 读取imdb数据集并构建词表（已有词表，但是还是希望能自己构建一个）
-IMDB 数据集包含来自互联网电影数据库（IMDB）的 50 000 条严重两极分化的评论。数据集被分为用于训练的 25 000 条评论与用于测试的 25 000 条评论，训练集和测试集都包含 50% 的正面评论和 50% 的负面评论。
-train_labels 和 test_labels 都是 0 和 1 组成的列表，其中 0代表负面（negative），1 代表正面（positive）
+>* 读取imdb数据集并构建词表（已有词表，但是还是希望能自己构建一个）
+>* IMDB 数据集包含来自互联网电影数据库（IMDB）的 50 000 条严重两极分化的评论。数据集被分为用于训练的 25 000 条评论与用于测试的 25 000 条评论，训练集和测试集都包含 50% 的正面评论和 50% 的负面评论。
+>* train_labels 和 test_labels 都是 0 和 1 组成的列表，其中 0代表负面（negative），1 代表正面（positive）
 熟悉python相关语法，完成数据集的读取，与词表的构建。
 
  
@@ -97,9 +97,9 @@ counter = Counter()
 1. 使用函数```string.lower()```，可以将```string```中的所有字母字符转换为小写形式。该函数接受一个字符串作为输入，并返回一个新的小写字符串。
 
 2. 使用函数```maketrans() ```，可以定义字符串转换规则，对于 ```trantab = str.maketrans(intab,outtab,deltab) ```
->元素```intab```表示被代替字符，可以有多个，写在```""```之中，无则不写
->元素```outtab```表示被代替字符，可以有多个，写在```""```之中，无则不写，注意需要与```intab```中的对应且数量一致
->元素```deltab```表示需要删除的元素，格式同上。
+>* 元素```intab```表示被代替字符，可以有多个，写在```""```之中，无则不写
+>* 元素```outtab```表示被代替字符，可以有多个，写在```""```之中，无则不写，注意需要与```intab```中的对应且数量一致
+>* 元素```deltab```表示需要删除的元素，格式同上。
 
 此写法限Python3，Python2写法与之不同。
 
@@ -110,8 +110,8 @@ counter = Counter()
 4. 字符串```string.punctuation```表示所有的标点符号组成的字符串。
 
 5.  使用函数```string.split()```，可以分割字符串，并返回一个列表。对于split(sep=None, maxsplit=-1)
->sep为切割，默认为空格
-> maxsplit为切割次数，给值-1或者none，将会从左到右每一个sep切割一次
+>*  sep为切割，默认为空格
+>*   maxsplit为切割次数，给值-1或者none，将会从左到右每一个sep切割一次
 6. 用将列表里面的单词更新计数器
 ```python
 for text in train_text:
@@ -169,7 +169,116 @@ if __name__ == "__main__":
     # print("Vocabulary:", vocab[:20])
     # print("Vocabulary size:", len(vocab))
 
+```
+### 2. 使用dataset，dataloader包装imdb数据集。
+>* 学会使用dataset，dataloader功能。
+
+* **Dataset,Dataloader是什么？**
+
+**Dataset（数据集）:**   在机器学习中，数据集是模型训练和评估的基础。它是一个包含输入数据和相应标签（或目标）的集合。数据集可以分为训练集、验证集和测试集，用于模型的训练、调优和评估。
+
+**Dataloader（数据加载器）:**   Dataloader是一个用于批量加载数据的工具，通常与Dataset一起使用。它可以帮助有效地管理和加载大规模的数据集，并将数据分批次提供给模型进行训练。Dataloader还可以提供数据的随机化和并行加载等功能，以优化训练效率。
+
+* **为什么要了解Dataloader？**
+
+​ 因为你的神经网络表现不佳的主要原因之一可能是由于数据不佳或理解不足。 因此，以更直观的方式理解、预处理数据并将其加载到网络中非常重要。​ 通常，我们在默认或知名数据集（如 MNIST 或 CIFAR）上训练神经网络，可以轻松地实现预测和分类类型问题的超过 90% 的准确度。 但是那是因为这些数据集组织整齐且易于预处理。 但是处理自己的数据集时，我们常常无法达到这样高的准确率。
+
+* **为什么要定义自己的数据集？**
+ 定义自己的数据集通常是因为实际问题的数据可能不符合通用的标准格式，或者需要进行特殊的处理和预处理。在本问题中，我们需要自己构建数据集。
+ 
+ * **构建构建imdb数据集的函数**
+ 构建imdb数据集需要覆盖原来三个函数，包括```__init__```，```__len__```和```__getitem__```。作用分别为初始化，返回数据集总大小，通过索引返回数据集中选定的样本。
+
+```python
+class IMDBDataset(Dataset):
+    def __init__(self, text_in, label_in, vocab_in):
+        self.text = text_in
+        self.label = label_in
+        self.vocab = vocab_in
+
+    def __len__(self):
+        return len(self.text)
+
+    def __getitem__(self, idx):
+        text = self.text[idx]
+        label = self.text[idx]
+
+        # 分词和数字化处理
+        numericalized_tokens = [self.vocab[token] for token in text]
+
+        return {'text': numericalized_tokens, 'label': label}
+```
+* **读取imdb数据集，构建词表，并构建数据集的总代码**
+
+```python
+import os
+import string
+from torch.utils.data import Dataset, DataLoader
+from collections import Counter
+
+
+class IMDBDataset(Dataset):
+    def __init__(self, text_in, label_in, vocab_in):
+        self.text = text_in
+        self.label = label_in
+        self.vocab = vocab_in
+
+    def __len__(self):
+        return len(self.text)
+
+    def __getitem__(self, idx):
+        text = self.text[idx]
+        label = self.text[idx]
+
+        # 分词和数字化处理
+        numericalized_tokens = [self.vocab[token] for token in text]
+
+        return {'text': numericalized_tokens, 'label': label}
+
+
+def read_imdb(data_dir):
+    texts = []
+    labels = []
+    for label_type in ['pos', 'neg']:
+        label = 1 if label_type == 'pos' else 0
+        dir_path = os.path.join(data_dir, label_type)  # 拼接路径
+        for filename in os.listdir(dir_path):
+            if filename.endswith('.txt'):
+                with open(os.path.join(dir_path, filename), 'r', encoding='utf-8') as file:
+                    text = file.read()
+                    texts.append(text)
+                    labels.append(label)
+    return texts, labels
+
+
+def build_vocab(max_vocab_size=None):
+    counter = Counter()
+    for text in train_text:
+        text = text.lower()  # 转换为小写
+        text = text.translate(str.maketrans("", "", string.punctuation))  # 去除标点符号
+        token = text.split()  # 分词
+        counter.update(token)  # 计数（出现频率）
+    voc = [word for word, _ in counter.most_common(max_vocab_size)]  # 提取出现频率最高的
+    return voc
+
+
+if __name__ == "__main__":
+
+    train_text, train_label = read_imdb('E:/pyprogram/winter_train/aclImdb/train')
+    test_text, test_label = read_imdb('E:/pyprogram/winter_train/aclImdb/test')
+
+    vocab = build_vocab(max_vocab_size=10000)
+
+    # print("Vocabulary:", vocab[:20])
+    # print("Vocabulary size:", len(vocab))
+
+    train_dataset = IMDBDataset(train_text, train_label, vocab)
+    test_dataset = IMDBDataset(test_text, test_label, vocab)
+
+    # 创建数据加载器
+    batch_size = 64
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 
 ```
-
