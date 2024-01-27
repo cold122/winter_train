@@ -23,8 +23,8 @@ def build_vocab(max_vocab_size=None):
     for text in train_text:
         text = text.lower()  # 转换为小写
         text = text.translate(str.maketrans("", "", string.punctuation))  # 去除标点符号
-        text = text.split()  # 分词
-        counter.update(text)  # 计数（出现频率）
+        token = text.split()  # 分词
+        counter.update(token)  # 计数（出现频率）
     voc = [word for word, _ in counter.most_common(max_vocab_size)]  # 提取出现频率最高的
     return voc
 
